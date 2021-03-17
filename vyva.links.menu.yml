@@ -1,0 +1,6 @@
+vyva.settings:
+  title: 'Video Automation'
+  route_name: vyva.settings
+  description: 'Virtual YMCA Video Automation settings form.'
+  parent: openy_gated_content.settings
+  weight: 20

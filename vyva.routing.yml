@@ -1,0 +1,9 @@
+vyva.settings:
+  path: '/admin/openy/virtual-ymca/vyva'
+  defaults:
+    _form: 'Drupal\vyva\Form\VyvaSettingsForm'
+    _title: 'Video automation settings'
+  options:
+    _admin_route: TRUE
+  requirements:
+    _permission: 'administer video automation'

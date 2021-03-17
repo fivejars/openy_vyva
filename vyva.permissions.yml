@@ -1,0 +1,6 @@
+administer video conversion:
+  title: 'Administer video conversion'
+  description: 'Administer live streams conversion into Virtual Y Videos.'
+administer video automation:
+  title: 'Administer video automation'
+  description: 'Administer Virtual Y Video Automation settings.'

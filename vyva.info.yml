@@ -1,0 +1,9 @@
+name: Virtual Y Video Automation
+type: module
+description: Video Automation functionality for Virtual Y.
+package: Open Y Virtual YMCA
+core_version_requirement: ^8 || ^9
+configure: vyva.settings
+dependencies:
+  - openy_gated_content:openy_gated_content
+  - recurring_events:recurring_events_views

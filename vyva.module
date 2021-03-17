@@ -1,0 +1,54 @@
+<?php
+
+/**
+ * @file
+ * Virtual Y video automation module.
+ */
+
+use Drupal\Core\Access\AccessResult;
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Session\AccountInterface;
+
+/**
+ * Implements hook_entity_type_build().
+ */
+function vyva_entity_type_build(array &$entity_types) {
+  /** @var \Drupal\Core\Entity\EntityTypeInterface[] $entity_types */
+  $entity_types['eventinstance']->setLinkTemplate('vyva-convert-form', '/vyva_convert/eventinstance/{eventinstance}');
+}
+
+/**
+ * Declares entity operations.
+ *
+ * @param \Drupal\Core\Entity\EntityInterface $entity
+ *   The entity on which the linked operations will be performed.
+ *
+ * @return array
+ *   An operations array as returned by
+ *   EntityListBuilderInterface::getOperations().
+ *
+ * @see \Drupal\Core\Entity\EntityListBuilderInterface::getOperations()
+ */
+function vyva_entity_operation(EntityInterface $entity) {
+  if ($entity->hasLinkTemplate('vyva-convert-form') && $entity->access('vyva-convert')) {
+    return [
+      'vyva-vonvert' => [
+        'title' => t('Convert'),
+        'weight' => 50,
+        'url' => $entity->toUrl('vyva-convert-form'),
+      ],
+    ];
+  }
+
+  return [];
+}
+
+/**
+ * Implements hook_entity_access().
+ */
+function vyva_entity_access(EntityInterface $entity, $operation, AccountInterface $account) {
+  if ($operation === 'vyva-convert') {
+    return AccessResult::allowedIfHasPermission($account, 'administer video conversion');
+  }
+  return AccessResult::neutral();
+}
