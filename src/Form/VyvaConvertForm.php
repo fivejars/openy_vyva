@@ -104,9 +104,9 @@ class VyvaConvertForm extends FormBase {
 
     $series = $this->entity->getEventSeries();
     $media = $series->field_ls_media->entity;
-    $form['vimeo_object_id'] = [
+    $form['vimeo_live_stream_id'] = [
       '#type' => 'textfield',
-      '#title' => $this->t('Vimeo object ID'),
+      '#title' => $this->t('Vimeo Live Stream ID'),
       '#default_value' => $media->field_media_video_id->value,
       '#required' => TRUE,
     ];

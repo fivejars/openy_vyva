@@ -1,0 +1,17 @@
+langcode: en
+status: true
+dependencies:
+  module:
+    - vyva
+    - serialization
+    - user
+id: vyva_conversion_status
+plugin_id: vyva_conversion_status
+granularity: resource
+configuration:
+  methods:
+    - POST
+  formats:
+    - json
+  authentication:
+    - cookie
