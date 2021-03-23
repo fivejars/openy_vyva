@@ -4,7 +4,7 @@ namespace Drupal\vyva\Plugin\rest\resource;
 
 use Drupal\rest\Plugin\ResourceBase;
 use Drupal\rest\ResourceResponse;
-use Drupal\vyva\DataManagerInterface;
+use Drupal\vyva\VyvaManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -22,11 +22,11 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class VyvaConversionStatus extends ResourceBase {
 
   /**
-   * The entity manager.
+   * The Virtual Y Video Automation manager.
    *
-   * @var \Drupal\Vyva\DataManager
+   * @var \Drupal\Vyva\VyvaManager
    */
-  protected $dataManager;
+  protected $vyvaManager;
 
   /**
    * Constructs a Client Data resource object.
@@ -41,7 +41,7 @@ class VyvaConversionStatus extends ResourceBase {
    *   The available serialization formats.
    * @param \Psr\Log\LoggerInterface $logger
    *   A logger instance.
-   * @param \Drupal\Vyva\DataManagerInterface $data_manager
+   * @param \Drupal\Vyva\VyvaManagerInterface $vyva_manager
    *   The entity type manager.
    */
   public function __construct(
@@ -50,7 +50,7 @@ class VyvaConversionStatus extends ResourceBase {
     $plugin_definition,
     array $serializer_formats,
     LoggerInterface $logger,
-    DataManagerInterface $data_manager
+    VyvaManagerInterface $vyva_manager
   ) {
     parent::__construct($configuration,
       $plugin_id,
@@ -58,7 +58,7 @@ class VyvaConversionStatus extends ResourceBase {
       $serializer_formats,
       $logger
     );
-    $this->dataManager = $data_manager;
+    $this->vyvaManager = $vyva_manager;
   }
 
   /**
@@ -76,7 +76,7 @@ class VyvaConversionStatus extends ResourceBase {
       $plugin_definition,
       $container->getParameter('serializer.formats'),
       $container->get('logger.factory')->get('openy_activity_finder'),
-      $container->get('vyva.data_manager')
+      $container->get('vyva.manager')
     );
   }
 
@@ -87,7 +87,7 @@ class VyvaConversionStatus extends ResourceBase {
    *   POST request data.
    */
   public function post(array $data) {
-    $this->dataManager->updateStatus($data);
+    $this->vyvaManager->updateStatus($data);
 
     return new ResourceResponse($data);
   }

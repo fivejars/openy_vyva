@@ -4,6 +4,6 @@ services:
     arguments: ['@entity_type.manager']
     tags:
       - { name: event_subscriber }
-  vyva.data_manager:
-    class: Drupal\vyva\DataManager
+  vyva.manager:
+    class: Drupal\vyva\VyvaManager
     arguments: ['@entity_type.manager']

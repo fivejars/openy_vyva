@@ -5,7 +5,7 @@ namespace Drupal\vyva;
 /**
  * Provides an interface for Virtual Y Video Automation data managers.
  */
-interface DataManagerInterface {
+interface VyvaManagerInterface {
 
   /**
    * Update conversion status.
@@ -28,5 +28,16 @@ interface DataManagerInterface {
    *   Conversion status entity.
    */
   public function getEntity($eventinstance_id);
+
+  /**
+   * Create Virtual Y Video node.
+   *
+   * @param array $data
+   *   Data to create the content from.
+   *
+   * @return \Drupal\Core\Entity\EntityTypeInterface
+   *   Created Virtual Y Video node.
+   */
+  public function createVideo(array $data);
 
 }
