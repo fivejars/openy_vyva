@@ -2,11 +2,14 @@
 
 namespace Drupal\vyva\Form;
 
+use Drupal\Component\Serialization\Json;
+use Drupal\Core\Datetime\DateFormatterInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Messenger\Messenger;
 use Drupal\Core\Routing\RouteMatchInterface;
+use GuzzleHttp\ClientInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -36,6 +39,20 @@ class VyvaConvertForm extends FormBase {
   protected $messenger;
 
   /**
+   * An http client.
+   *
+   * @var \GuzzleHttp\ClientInterface
+   */
+  protected $httpClient;
+
+  /**
+   * The date formatter service.
+   *
+   * @var \Drupal\Core\Datetime\DateFormatterInterface
+   */
+  protected $dateFormatter;
+
+  /**
    * Constructs a new Vyva convert form.
    *
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
@@ -44,12 +61,24 @@ class VyvaConvertForm extends FormBase {
    *   The route match service.
    * @param \Drupal\Core\Messenger\Messenger $messenger
    *   The messenger service.
+   * @param \GuzzleHttp\ClientInterface $http_client
+   *   An HTTP client.
+   * @param \Drupal\Core\Datetime\DateFormatterInterface $date_formatter
+   *   The date formatter service.
    *
    * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    */
-  public function __construct(EntityTypeManagerInterface $entity_type_manager, RouteMatchInterface $route_match, Messenger $messenger) {
+  public function __construct(
+    EntityTypeManagerInterface $entity_type_manager,
+    RouteMatchInterface $route_match,
+    Messenger $messenger,
+    ClientInterface $http_client,
+    DateFormatterInterface $date_formatter
+  ) {
     $this->entityTypeManager = $entity_type_manager;
     $this->messenger = $messenger;
+    $this->httpClient = $http_client;
+    $this->dateFormatter = $date_formatter;
 
     $parameter_name = $route_match->getRouteObject()->getOption('_vyva_entity_type_id');
     $this->entity = $route_match->getParameter($parameter_name);
@@ -62,7 +91,9 @@ class VyvaConvertForm extends FormBase {
     return new static(
       $container->get('entity_type.manager'),
       $container->get('current_route_match'),
-      $container->get('messenger')
+      $container->get('messenger'),
+      $container->get('http_client'),
+      $container->get('date.formatter')
     );
   }
 
@@ -81,33 +112,39 @@ class VyvaConvertForm extends FormBase {
       return $form;
     }
 
+    $series = $this->entity->getEventSeries();
+    // TODO: identify this ID using Vimeo API.
+    $vimeo_video_id = 521479164;
+    $vimeo_url = 'https://vimeo.com/api/oembed.json?url=https://vimeo.com/' . $vimeo_video_id;
+    $vimeo_response = $this->httpClient->request('GET', $vimeo_url);
+    $video_data = Json::decode($vimeo_response->getBody()->getContents());
+
     $form['video'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('Video'),
-      '#default_value' => 'TODO: rendered video to help identify start and end time',
+      '#type' => 'inline_template',
+      '#template' => $video_data['html'],
     ];
 
     $form['begin_time'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Begin time'),
-      '#description' => $this->t('Specify begin time in HH:MM format.'),
-      '#placeholder' => '00:00',
+      '#description' => $this->t('Specify begin time in HH:MM:SS format.'),
+      '#default_value' => '00:00:00',
+      '#placeholder' => '00:00:00',
       '#required' => TRUE,
     ];
     $form['end_time'] = [
       '#type' => 'textfield',
       '#title' => $this->t('End time'),
-      '#description' => $this->t('Specify end time in HH:MM format.'),
-      '#placeholder' => '00:00',
+      '#description' => $this->t('Specify end time in HH:MM:SS format.'),
+      '#default_value' => $this->dateFormatter->format($video_data['duration'], 'custom', 'H:i:s', 'UTC'),
+      '#placeholder' => '00:00:00',
       '#required' => TRUE,
     ];
 
-    $series = $this->entity->getEventSeries();
-    $media = $series->field_ls_media->entity;
-    $form['vimeo_live_stream_id'] = [
+    $form['vimeo_video_id'] = [
       '#type' => 'textfield',
-      '#title' => $this->t('Vimeo Live Stream ID'),
-      '#default_value' => $media->field_media_video_id->value,
+      '#title' => $this->t('Vimeo Video ID'),
+      '#default_value' => $vimeo_video_id,
       '#required' => TRUE,
     ];
 
