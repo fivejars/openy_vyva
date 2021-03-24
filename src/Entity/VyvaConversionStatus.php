@@ -8,7 +8,7 @@ use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
 
 /**
- * Defines the Conversion Status entity.
+ * Defines the VYVA Conversion Status entity.
  *
  * @ingroup vyva
  *
@@ -17,9 +17,9 @@ use Drupal\Core\StringTranslation\TranslatableMarkup;
  *   label = @Translation("Conversion Status"),
  *   handlers = {
  *     "view_builder" = "Drupal\Core\Entity\EntityViewBuilder",
- *     "views_data" = "Drupal\views\EntityViewsData",
+ *     "views_data" = "Drupal\vyva\VyvaConversionStatusViewsData",
  *   },
- *   base_table = "vyva_convertion_status",
+ *   base_table = "vyva_conversion_status",
  *   translatable = FALSE,
  *   fieldable = FALSE,
  *   entity_keys = {
