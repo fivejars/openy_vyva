@@ -42,7 +42,7 @@ class VyvaConversionStatus extends ResourceBase {
    * @param \Psr\Log\LoggerInterface $logger
    *   A logger instance.
    * @param \Drupal\Vyva\VyvaManagerInterface $vyva_manager
-   *   The entity type manager.
+   *   The Virtual Y Video Automation manager.
    */
   public function __construct(
     array $configuration,

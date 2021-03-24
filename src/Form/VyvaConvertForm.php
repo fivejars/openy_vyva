@@ -4,12 +4,15 @@ namespace Drupal\vyva\Form;
 
 use Drupal\Component\Serialization\Json;
 use Drupal\Core\Datetime\DateFormatterInterface;
+use Drupal\Core\Datetime\DrupalDateTime;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Messenger\Messenger;
 use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\Core\State\StateInterface;
 use Drupal\Core\Url;
+use Drupal\vyva\VyvaManagerInterface;
 use GuzzleHttp\ClientInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -19,18 +22,18 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class VyvaConvertForm extends FormBase {
 
   /**
-   * The entity type manager.
-   *
-   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
-   */
-  protected $entityTypeManager;
-
-  /**
    * The entity ready to convert.
    *
    * @var \Drupal\Core\Entity\EntityInterface
    */
   protected $entity;
+
+  /**
+   * The entity type manager.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
+   */
+  protected $entityTypeManager;
 
   /**
    * The messenger service.
@@ -54,6 +57,20 @@ class VyvaConvertForm extends FormBase {
   protected $dateFormatter;
 
   /**
+   * The state store.
+   *
+   * @var \Drupal\Core\State\StateInterface
+   */
+  protected $state;
+
+  /**
+   * The Virtual Y Video Automation manager.
+   *
+   * @var \Drupal\Vyva\VyvaManager
+   */
+  protected $vyvaManager;
+
+  /**
    * Constructs a new Vyva convert form.
    *
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
@@ -66,6 +83,10 @@ class VyvaConvertForm extends FormBase {
    *   An HTTP client.
    * @param \Drupal\Core\Datetime\DateFormatterInterface $date_formatter
    *   The date formatter service.
+   * @param \Drupal\Core\State\StateInterface $state
+   *   The state store.
+   * @param \Drupal\Vyva\VyvaManagerInterface $vyva_manager
+   *   The Virtual Y Video Automation manager.
    *
    * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    */
@@ -74,12 +95,16 @@ class VyvaConvertForm extends FormBase {
     RouteMatchInterface $route_match,
     Messenger $messenger,
     ClientInterface $http_client,
-    DateFormatterInterface $date_formatter
+    DateFormatterInterface $date_formatter,
+    StateInterface $state,
+    VyvaManagerInterface $vyva_manager
   ) {
     $this->entityTypeManager = $entity_type_manager;
     $this->messenger = $messenger;
     $this->httpClient = $http_client;
     $this->dateFormatter = $date_formatter;
+    $this->state = $state;
+    $this->vyvaManager = $vyva_manager;
 
     $parameter_name = $route_match->getRouteObject()->getOption('_vyva_entity_type_id');
     $this->entity = $route_match->getParameter($parameter_name);
@@ -94,7 +119,9 @@ class VyvaConvertForm extends FormBase {
       $container->get('current_route_match'),
       $container->get('messenger'),
       $container->get('http_client'),
-      $container->get('date.formatter')
+      $container->get('date.formatter'),
+      $container->get('state'),
+      $container->get('vyva.manager')
     );
   }
 
@@ -113,12 +140,42 @@ class VyvaConvertForm extends FormBase {
       return $form;
     }
 
-    $series = $this->entity->getEventSeries();
-    // TODO: identify this ID using Vimeo API.
-    $vimeo_video_id = 521479164;
-    $vimeo_url = 'https://vimeo.com/api/oembed.json?url=https://vimeo.com/' . $vimeo_video_id;
-    $vimeo_response = $this->httpClient->request('GET', $vimeo_url);
-    $video_data = Json::decode($vimeo_response->getBody()->getContents());
+    // Check if form was submitted by AJAX with Vimeo Video ID.
+    $vimeo_video_id = $form_state->getValue('vimeo_video_id');
+    if (!$vimeo_video_id) {
+      $video = $this->getVideo();
+      $vimeo_video_id = $video ? str_replace('/videos/', '', $video['uri']) : '';
+    }
+
+    $video_data = NULL;
+    if ($vimeo_video_id) {
+      $vimeo_url = 'https://vimeo.com/' . $vimeo_video_id;
+      $response = $this->httpClient->request('GET', 'https://vimeo.com/api/oembed.json?url=' . $vimeo_url);
+      $video_data = Json::decode($response->getBody()->getContents());
+    }
+
+    $form['#prefix'] = '<div id="ajax-wrapper">';
+    $form['#suffix'] = '</div>';
+    $form['vimeo_video_id'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Vimeo Video ID'),
+      '#description' => $this->t('ID of the video found by API call; might be empty if the search failed.'),
+      '#default_value' => $vimeo_video_id,
+      '#required' => TRUE,
+      '#ajax' => [
+        'callback' => '::ajaxCallback',
+        'event' => 'change',
+        'wrapper' => 'ajax-wrapper',
+        'progress' => [
+          'type' => 'throbber',
+          'message' => $this->t('Updating video information...'),
+        ],
+      ],
+    ];
+
+    if (!$video_data) {
+      return $form;
+    }
 
     $form['video'] = [
       '#type' => 'inline_template',
@@ -142,13 +199,7 @@ class VyvaConvertForm extends FormBase {
       '#required' => TRUE,
     ];
 
-    $form['vimeo_video_id'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('Vimeo Video ID'),
-      '#default_value' => $vimeo_video_id,
-      '#required' => TRUE,
-    ];
-
+    $series = $this->entity->getEventSeries();
     $form['video_name'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Video name'),
@@ -233,7 +284,7 @@ class VyvaConvertForm extends FormBase {
     $callback = Url::fromUri('internal:/vyva/api/v1/conversion-status', $options);
     $callback = $callback->toString();
 
-    // Might not be parseable - the proper form element is to be used.
+    // Might not be parsable - the proper form element is to be used.
     $parsed = date_parse($form_state->getValue('begin_time'));
     $start = $parsed['hour'] * 3600 + $parsed['minute'] * 60 + $parsed['second'];
     $parsed = date_parse($form_state->getValue('end_time'));
@@ -263,6 +314,12 @@ class VyvaConvertForm extends FormBase {
     $this->httpClient->post($uri, [
       'form_params' => $data,
     ]);
+
+    // Update conversion status.
+    $this->vyvaManager->updateStatus([
+      'eventinstance_id' => $this->entity->id(),
+      'status' => 'requested',
+    ]);
   }
 
   /**
@@ -279,6 +336,68 @@ class VyvaConvertForm extends FormBase {
       $array = [$array];
     }
     return json_encode(array_column($array, 'target_id'));
+  }
+
+  /**
+   * Get video data from Vimeo.
+   *
+   * @return array|null
+   *   Video data or null.
+   *
+   * @throws \GuzzleHttp\Exception\GuzzleException
+   */
+  public function getVideo() {
+    $video = NULL;
+    $series = $this->entity->getEventSeries();
+    // Get event data from Vimeo to use its title for video search.
+    $media = $series->field_ls_media->entity;
+    $event_url = $media->field_media_video_embed_field->value;
+    if (!$event_url) {
+      return NULL;
+    }
+    $response = $this->httpClient->request('GET', 'https://vimeo.com/api/oembed.json?url=' . $event_url);
+    $event_data = Json::decode($response->getBody()->getContents());
+
+    // Send videos search request.
+    $response = $this->httpClient->request('GET', 'https://api.vimeo.com/me/videos', [
+      'headers' => [
+        'Authorization' => 'Bearer ' . $this->state->get('vyva.vimeo.access_token'),
+      ],
+      'query' => [
+        'query' => $event_data['title'],
+        'per_page' => 100,
+        'sort' => 'date',
+        'direction' => 'desc',
+      ],
+    ]);
+    $items = Json::decode($response->getBody()->getContents());
+
+    // It looks like Vimeo creates new video for the next event occurrence once
+    // the previous occurrence ended. That is why we need to find the first
+    // item with created date less than this eventinstance date.
+    $date = new DrupalDateTime($this->entity->date->value, 'UTC');
+    foreach ($items['data'] as $item) {
+      $item_date = new DrupalDateTime($item['created_time'], 'UTC');
+      if ($item_date > $date) {
+        continue;
+      }
+      else {
+        $video = $item;
+        break;
+      }
+    }
+
+    return $video;
+  }
+
+  /**
+   * AJAX callback for changed video ID.
+   */
+  public function ajaxCallback(array &$form, FormStateInterface $form_state) {
+    // Update end time value to the default one - the default one is set to the
+    // duration of the video.
+    $form['end_time']['#value'] = $form['end_time']['#default_value'];
+    return $form;
   }
 
 }
