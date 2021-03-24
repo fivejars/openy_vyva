@@ -9,6 +9,7 @@ use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Messenger\Messenger;
 use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\Core\Url;
 use GuzzleHttp\ClientInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -227,7 +228,57 @@ class VyvaConvertForm extends FormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    // TODO.
+    $config = $this->config('vyva.settings');
+    $options = ['absolute' => TRUE];
+    $callback = Url::fromUri('internal:/vyva/api/v1/conversion-status', $options);
+    $callback = $callback->toString();
+
+    // Might not be parseable - the proper form element is to be used.
+    $parsed = date_parse($form_state->getValue('begin_time'));
+    $start = $parsed['hour'] * 3600 + $parsed['minute'] * 60 + $parsed['second'];
+    $parsed = date_parse($form_state->getValue('end_time'));
+    $end = $parsed['hour'] * 3600 + $parsed['minute'] * 60 + $parsed['second'];
+    $duration = $end - $start;
+
+    $categories = $form_state->getValue('categories');
+    $equipment = $form_state->getValue('equipment');
+
+    $data = [
+      'CALLBACK_URL' => $callback,
+      'EVENT_INSTANCE_ID' => $this->entity->id(),
+      'VIMEO_VIDEO_ID' => $form_state->getValue('vimeo_video_id'),
+      'START' => $start,
+      'DURATION' => $duration,
+      'VIDEO_NAME' => $form_state->getValue('video_name'),
+      'VY_HOST_NAME' => $form_state->getValue('host_name'),
+      'VY_CATEGORIES' => $this->formatArrayValues($categories),
+      'VY_EQUIPMENT' => $this->formatArrayValues($equipment),
+      'VY_LEVEL' => $form_state->getValue('level'),
+      'PREROLL_VIMEO_VIDEO_ID' => $config->get('pre_roll'),
+      'POSTROLL_VIMEO_VIDEO_ID' => $config->get('post_roll'),
+    ];
+
+    $uri = $config->get('authentication.domain');
+
+    $this->httpClient->post($uri, [
+      'form_params' => $data,
+    ]);
+  }
+
+  /**
+   * Formats an array so that it can be transferred.
+   *
+   * @param mixed $array
+   *   The array of values.
+   *
+   * @return mixed
+   *   The formatted value.
+   */
+  private function formatArrayValues($array) {
+    if (!is_array($array)) {
+      $array = [$array];
+    }
+    return json_encode(array_column($array, 'target_id'));
   }
 
 }

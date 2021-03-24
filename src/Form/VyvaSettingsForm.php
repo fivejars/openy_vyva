@@ -45,14 +45,17 @@ class VyvaSettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
+    $config = $this->config('vyva.settings');
     $form['pre_roll'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Pre-roll video'),
+      '#default_value' => $config->get('pre_roll'),
     ];
 
     $form['post_roll'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Post-roll video'),
+      '#default_value' => $config->get('post_roll'),
     ];
 
     $form['notification'] = [
@@ -68,16 +71,19 @@ class VyvaSettingsForm extends ConfigFormBase {
     $form['authentication'] = [
       '#type' => 'fieldset',
       '#title' => $this->t('Authentication settings'),
+      '#tree' => TRUE,
     ];
 
     $form['authentication']['domain'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Domain'),
+      '#default_value' => $config->get('authentication.domain'),
     ];
 
     $form['authentication']['token'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Token'),
+      '#default_value' => $config->get('authentication.token'),
     ];
 
     $form['vimeo'] = [
@@ -113,6 +119,12 @@ class VyvaSettingsForm extends ConfigFormBase {
     $this->state->set('vyva.vimeo.client_id', $form_state->getValue('client_id'));
     $this->state->set('vyva.vimeo.client_secret', $form_state->getValue('client_secret'));
     $this->state->set('vyva.vimeo.access_token', $form_state->getValue('access_token'));
+
+    $this->config('vyva.settings')
+      ->set('pre_roll', $form_state->getValue('pre_roll'))
+      ->set('post_roll', $form_state->getValue('post_roll'))
+      ->set('authentication', $form_state->getValue('authentication'))
+      ->save();
 
     parent::submitForm($form, $form_state);
   }
