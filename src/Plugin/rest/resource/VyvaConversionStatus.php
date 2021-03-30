@@ -3,7 +3,7 @@
 namespace Drupal\vyva\Plugin\rest\resource;
 
 use Drupal\rest\Plugin\ResourceBase;
-use Drupal\rest\ResourceResponse;
+use Drupal\rest\ModifiedResourceResponse;
 use Drupal\vyva\VyvaManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -89,7 +89,7 @@ class VyvaConversionStatus extends ResourceBase {
   public function post(array $data) {
     $this->vyvaManager->updateStatus($data);
 
-    return new ResourceResponse($data);
+    return new ModifiedResourceResponse($data);
   }
 
 }

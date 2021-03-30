@@ -2,7 +2,10 @@
 
 namespace Drupal\vyva;
 
+use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Mail\MailManagerInterface;
+use Drupal\Core\Session\AccountInterface;
 use Drupal\node\NodeInterface;
 
 /**
@@ -18,13 +21,43 @@ class VyvaManager implements VyvaManagerInterface {
   protected $entityTypeManager;
 
   /**
-   * Constructs a new RouteSubscriber object.
+   * The configuration object factory.
+   *
+   * @var \Drupal\Core\Config\ConfigFactoryInterface
+   */
+  protected $configFactory;
+
+  /**
+   * The currently logged-in user.
+   *
+   * @var \Drupal\Core\Session\AccountInterface
+   */
+  protected $currentUser;
+
+  /**
+   * Mail manager service.
+   *
+   * @var \Drupal\Core\Mail\MailManagerInterface
+   */
+  protected $mailManager;
+
+  /**
+   * Constructs a new VyvaManager object.
    *
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    *   The entity type manager.
+   * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
+   *   The configuration object factory.
+   * @param \Drupal\Core\Session\AccountInterface $user
+   *   The current user.
+   * @param \Drupal\Core\Mail\MailManagerInterface $mail_manager
+   *   Mail manager service.
    */
-  public function __construct(EntityTypeManagerInterface $entity_type_manager) {
+  public function __construct(EntityTypeManagerInterface $entity_type_manager, ConfigFactoryInterface $config_factory, AccountInterface $user, MailManagerInterface $mail_manager) {
     $this->entityTypeManager = $entity_type_manager;
+    $this->configFactory = $config_factory;
+    $this->currentUser = $user;
+    $this->mailManager = $mail_manager;
   }
 
   /**
@@ -51,7 +84,16 @@ class VyvaManager implements VyvaManagerInterface {
         $entity->gc_video = $video_node->id();
         $entity->save();
 
-        // TODO VYVA-12: email notification.
+        // Send email notification.
+        $module = 'vyva';
+        $key = 'create_gc_video';
+        $to = $this->configFactory->get('vyva.settings')->get('notification.emails');
+        $langcode = $this->currentUser->getPreferredLangcode();
+        $params['message'] = $this->configFactory->get('vyva.settings')->get('notification.template');
+        $params['video_node_name'] = $video_node->label();
+        $params['video_node_edit_url'] = $video_node->toUrl('edit-form')->setAbsolute()->toString();
+
+        $this->mailManager->mail($module, $key, $to, $langcode, $params);
         break;
 
       case 'started':

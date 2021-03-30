@@ -61,11 +61,21 @@ class VyvaSettingsForm extends ConfigFormBase {
     $form['notification'] = [
       '#type' => 'fieldset',
       '#title' => $this->t('Notification settings'),
+      '#tree' => TRUE,
     ];
 
-    $form['notification']['email'] = [
+    $form['notification']['emails'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Emails'),
+      '#description' => $this->t('Comma-separated email addresses to notify about video conversion.'),
+      '#default_value' => $config->get('notification.emails'),
+    ];
+
+    $form['notification']['template'] = [
+      '#type' => 'textarea',
+      '#title' => $this->t('Email template'),
+      '#description' => $this->t('Email template with @video_node_name and @video_node_edit_url placeholders.'),
+      '#default_value' => $config->get('notification.template'),
     ];
 
     $form['authentication'] = [
@@ -116,15 +126,18 @@ class VyvaSettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $this->state->set('vyva.vimeo.client_id', $form_state->getValue('client_id'));
-    $this->state->set('vyva.vimeo.client_secret', $form_state->getValue('client_secret'));
-    $this->state->set('vyva.vimeo.access_token', $form_state->getValue('access_token'));
-
     $this->config('vyva.settings')
       ->set('pre_roll', $form_state->getValue('pre_roll'))
       ->set('post_roll', $form_state->getValue('post_roll'))
+      ->set('notification', $form_state->getValue('notification'))
       ->set('authentication', $form_state->getValue('authentication'))
       ->save();
+
+    $this->state->set('vyva.vimeo.client_id', $form_state->getValue('client_id'));
+    $this->state->set('vyva.vimeo.client_secret', $form_state->getValue('client_secret'));
+    if (!empty($form_state->getValue('access_token'))) {
+      $this->state->set('vyva.vimeo.access_token', $form_state->getValue('access_token'));
+    }
 
     parent::submitForm($form, $form_state);
   }

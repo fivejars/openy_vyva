@@ -52,3 +52,19 @@ function vyva_entity_access(EntityInterface $entity, $operation, AccountInterfac
   }
   return AccessResult::neutral();
 }
+
+/**
+ * Implements hook_mail().
+ */
+function vyva_mail($key, &$message, $params) {
+  switch ($key) {
+    case 'create_gc_video':
+      $message['from'] = \Drupal::config('system.site')->get('mail');
+      $message['subject'] = t('A live stream recording has been converted to On-Demand Video - Virtual YMCA');
+      $message['body'][] = t($params['message'], [
+        '@video_node_name' => $params['video_node_name'],
+        '@video_node_edit_url' => $params['video_node_edit_url'],
+      ]);
+      break;
+  }
+}
