@@ -47,7 +47,7 @@ class VyvaManager implements VyvaManagerInterface {
 
       case 'completed':
         // Create Virtual Y Video node.
-        $video_node = $this->createVideo($data['details']);
+        $video_node = $this->createVideo($data);
         $entity->gc_video = $video_node->id();
         $entity->save();
 
@@ -87,16 +87,22 @@ class VyvaManager implements VyvaManagerInterface {
    * {@inheritdoc}
    */
   public function createVideo($data) {
+    $eventinstance = $this->entityTypeManager
+      ->getStorage('eventinstance')
+      ->load($data['eventinstance_id']);
+    $series = $eventinstance->getEventSeries();
+    $details = $data['details'];
+
     // Create media entity.
     // TODO: Put media into special directory?
     $media = $this->entityTypeManager->getStorage('media')->create([
       'bundle' => 'video',
       'uid' => 1,
-      'name' => $data['videoName'],
+      'name' => $details['videoName'],
       'field_media_in_library' => 1,
-      'field_media_video_id' => $data['videoId'],
+      'field_media_video_id' => $details['videoId'],
       'field_media_source' => 'vimeo',
-      'field_media_video_embed_field' => 'https://vimeo.com/' . $data['videoId'],
+      'field_media_video_embed_field' => 'https://vimeo.com/' . $details['videoId'],
     ]);
     $media->save();
 
@@ -105,13 +111,14 @@ class VyvaManager implements VyvaManagerInterface {
     $node = $this->entityTypeManager->getStorage('node')->create([
       'type' => 'gc_video',
       'uid' => 1,
-      'title' => $data['videoName'],
+      'title' => $details['videoName'],
       'status' => NodeInterface::NOT_PUBLISHED,
-      'field_gc_video_instructor' => $data['hostName'],
-      'field_gc_video_category' => $data['categories'],
-      'field_gc_video_equipment' => $data['equipment'],
-      'field_gc_video_level' => $data['level'],
+      'field_gc_video_instructor' => $details['hostName'],
+      'field_gc_video_category' => $details['categories'],
+      'field_gc_video_equipment' => $details['equipment'],
+      'field_gc_video_level' => $details['level'],
       'field_gc_video_media' => $media->id(),
+      'field_gc_video_description' => $eventinstance->body->isEmpty() ? $series->body : $eventinstance->body,
     ]);
     $node->save();
 
