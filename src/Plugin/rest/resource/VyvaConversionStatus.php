@@ -31,7 +31,7 @@ class VyvaConversionStatus extends ResourceBase {
   protected $vyvaManager;
 
   /**
-   * The configuration factoyr.
+   * The configuration factory.
    *
    * @var \Drupal\Core\Config\ConfigFactoryInterface
    */
