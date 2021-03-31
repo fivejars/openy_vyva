@@ -61,10 +61,9 @@ function vyva_mail($key, &$message, $params) {
     case 'create_gc_video':
       $message['from'] = \Drupal::config('system.site')->get('mail');
       $message['subject'] = t('A live stream recording has been converted to On-Demand Video - Virtual YMCA');
-      $message['body'][] = t($params['message'], [
-        '@video_node_name' => $params['video_node_name'],
-        '@video_node_edit_url' => $params['video_node_edit_url'],
-      ]);
+      $tokens = ['@video_node_name', '@video_node_edit_url'];
+      $values = [$params['video_node_name'], $params['video_node_edit_url']];
+      $message['body'][] = str_replace($tokens, $values, $params['message']);
       break;
   }
 }
