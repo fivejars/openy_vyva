@@ -86,6 +86,19 @@ class VyvaSettingsForm extends ConfigFormBase {
       '#default_value' => $config->get('authentication.token'),
     ];
 
+    $form['webhook'] = [
+      '#type' => 'fieldset',
+      '#title' => $this->t('Webhook authentication'),
+      '#tree' => TRUE,
+    ];
+
+    $form['webhook']['token'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Token'),
+      '#description' => $this->t('Incoming requests to VYVA REST-endpoints should contain this token.'),
+      '#default_value' => $config->get('webhook.token'),
+    ];
+
     $form['vimeo'] = [
       '#type' => 'fieldset',
       '#title' => $this->t('Vimeo settings'),
@@ -124,6 +137,7 @@ class VyvaSettingsForm extends ConfigFormBase {
       ->set('pre_roll', $form_state->getValue('pre_roll'))
       ->set('post_roll', $form_state->getValue('post_roll'))
       ->set('authentication', $form_state->getValue('authentication'))
+      ->set('webhook', $form_state->getValue('webhook'))
       ->save();
 
     parent::submitForm($form, $form_state);
