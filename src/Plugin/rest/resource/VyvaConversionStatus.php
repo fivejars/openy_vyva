@@ -2,6 +2,8 @@
 
 namespace Drupal\vyva\Plugin\rest\resource;
 
+use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\rest\ModifiedResourceResponse;
 use Drupal\rest\Plugin\ResourceBase;
 use Drupal\rest\ModifiedResourceResponse;
 use Drupal\vyva\VyvaManagerInterface;
@@ -29,6 +31,13 @@ class VyvaConversionStatus extends ResourceBase {
   protected $vyvaManager;
 
   /**
+   * The configuration factory.
+   *
+   * @var \Drupal\Core\Config\ConfigFactoryInterface
+   */
+  protected $configFactory;
+
+  /**
    * Constructs a Client Data resource object.
    *
    * @param array $configuration
@@ -43,6 +52,8 @@ class VyvaConversionStatus extends ResourceBase {
    *   A logger instance.
    * @param \Drupal\Vyva\VyvaManagerInterface $vyva_manager
    *   The Virtual Y Video Automation manager.
+   * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
+   *   The config factory.
    */
   public function __construct(
     array $configuration,
@@ -50,7 +61,8 @@ class VyvaConversionStatus extends ResourceBase {
     $plugin_definition,
     array $serializer_formats,
     LoggerInterface $logger,
-    VyvaManagerInterface $vyva_manager
+    VyvaManagerInterface $vyva_manager,
+    ConfigFactoryInterface $config_factory
   ) {
     parent::__construct($configuration,
       $plugin_id,
@@ -59,6 +71,7 @@ class VyvaConversionStatus extends ResourceBase {
       $logger
     );
     $this->vyvaManager = $vyva_manager;
+    $this->configFactory = $config_factory;
   }
 
   /**
@@ -76,7 +89,8 @@ class VyvaConversionStatus extends ResourceBase {
       $plugin_definition,
       $container->getParameter('serializer.formats'),
       $container->get('logger.factory')->get('openy_activity_finder'),
-      $container->get('vyva.manager')
+      $container->get('vyva.manager'),
+      $container->get('config.factory')
     );
   }
 
@@ -87,6 +101,15 @@ class VyvaConversionStatus extends ResourceBase {
    *   POST request data.
    */
   public function post(array $data) {
+    $token = $this->configFactory->get('vyva.settings')->get('webhook.token');
+
+    if (!isset($data['token'])) {
+      return new ModifiedResourceResponse(['error' => 'Token is missing'], 403);
+    }
+    if ($data['token'] !== $token) {
+      return new ModifiedResourceResponse(['error' => 'Provided token is wrong'], 403);
+    }
+
     $this->vyvaManager->updateStatus($data);
 
     return new ModifiedResourceResponse($data);
