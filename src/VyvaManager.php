@@ -2,11 +2,13 @@
 
 namespace Drupal\vyva;
 
+use Drupal\Component\Serialization\Json;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Mail\MailManagerInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\node\NodeInterface;
+use GuzzleHttp\ClientInterface;
 
 /**
  * Subscriber for Video conversion routes.
@@ -42,6 +44,13 @@ class VyvaManager implements VyvaManagerInterface {
   protected $mailManager;
 
   /**
+   * An http client.
+   *
+   * @var \GuzzleHttp\ClientInterface
+   */
+  protected $httpClient;
+
+  /**
    * Constructs a new VyvaManager object.
    *
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
@@ -52,12 +61,21 @@ class VyvaManager implements VyvaManagerInterface {
    *   The current user.
    * @param \Drupal\Core\Mail\MailManagerInterface $mail_manager
    *   Mail manager service.
+   * @param \GuzzleHttp\ClientInterface $http_client
+   *   An HTTP client.
    */
-  public function __construct(EntityTypeManagerInterface $entity_type_manager, ConfigFactoryInterface $config_factory, AccountInterface $user, MailManagerInterface $mail_manager) {
+  public function __construct(
+    EntityTypeManagerInterface $entity_type_manager,
+    ConfigFactoryInterface $config_factory,
+    AccountInterface $user,
+    MailManagerInterface $mail_manager,
+    ClientInterface $http_client
+  ) {
     $this->entityTypeManager = $entity_type_manager;
     $this->configFactory = $config_factory;
     $this->currentUser = $user;
     $this->mailManager = $mail_manager;
+    $this->httpClient = $http_client;
   }
 
   /**
@@ -148,8 +166,10 @@ class VyvaManager implements VyvaManagerInterface {
     ]);
     $media->save();
 
+    // Get video data from Vimeo.
+    $video_data = $this->getVimeoVideoData('https://vimeo.com/' . $details['videoId']);
+
     // Create Virtual Y Video entity.
-    // TODO: add video duration field value.
     $node = $this->entityTypeManager->getStorage('node')->create([
       'type' => 'gc_video',
       'uid' => 1,
@@ -161,10 +181,19 @@ class VyvaManager implements VyvaManagerInterface {
       'field_gc_video_level' => $details['level'],
       'field_gc_video_media' => $media->id(),
       'field_gc_video_description' => $eventinstance->body->isEmpty() ? $series->body : $eventinstance->body,
+      'field_gc_video_duration' => $video_data['duration'],
     ]);
     $node->save();
 
     return $node;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getVimeoVideoData($vimeo_url) {
+    $response = $this->httpClient->request('GET', 'https://vimeo.com/api/oembed.json?url=' . $vimeo_url);
+    return Json::decode($response->getBody()->getContents());
   }
 
 }

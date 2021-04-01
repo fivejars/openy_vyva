@@ -40,4 +40,15 @@ interface VyvaManagerInterface {
    */
   public function createVideo(array $data);
 
+  /**
+   * Get video data from Vimeo.
+   *
+   * @param string $vimeo_url
+   *   Vimeo URL.
+   *
+   * @return array
+   *   Video data.
+   */
+  public function getVimeoVideoData($vimeo_url);
+
 }

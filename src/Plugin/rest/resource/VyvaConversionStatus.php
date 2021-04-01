@@ -5,7 +5,6 @@ namespace Drupal\vyva\Plugin\rest\resource;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\rest\ModifiedResourceResponse;
 use Drupal\rest\Plugin\ResourceBase;
-use Drupal\rest\ModifiedResourceResponse;
 use Drupal\vyva\VyvaManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;

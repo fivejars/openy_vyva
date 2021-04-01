@@ -6,4 +6,4 @@ services:
       - { name: event_subscriber }
   vyva.manager:
     class: Drupal\vyva\VyvaManager
-    arguments: ['@entity_type.manager', '@config.factory', '@current_user', '@plugin.manager.mail']
+    arguments: ['@entity_type.manager', '@config.factory', '@current_user', '@plugin.manager.mail', '@http_client']

@@ -149,9 +149,7 @@ class VyvaConvertForm extends FormBase {
 
     $video_data = NULL;
     if ($vimeo_video_id) {
-      $vimeo_url = 'https://vimeo.com/' . $vimeo_video_id;
-      $response = $this->httpClient->request('GET', 'https://vimeo.com/api/oembed.json?url=' . $vimeo_url);
-      $video_data = Json::decode($response->getBody()->getContents());
+      $video_data = $this->vyvaManager->getVimeoVideoData('https://vimeo.com/' . $vimeo_video_id);
     }
 
     $form['#prefix'] = '<div id="ajax-wrapper">';
@@ -335,7 +333,7 @@ class VyvaConvertForm extends FormBase {
     if (!is_array($array)) {
       $array = [$array];
     }
-    return json_encode(array_column($array, 'target_id'));
+    return Json::encode(array_column($array, 'target_id'));
   }
 
   /**
@@ -355,8 +353,7 @@ class VyvaConvertForm extends FormBase {
     if (!$event_url) {
       return NULL;
     }
-    $response = $this->httpClient->request('GET', 'https://vimeo.com/api/oembed.json?url=' . $event_url);
-    $event_data = Json::decode($response->getBody()->getContents());
+    $event_data = $this->vyvaManager->getVimeoVideoData($event_url);
 
     // Send videos search request.
     $response = $this->httpClient->request('GET', 'https://api.vimeo.com/me/videos', [
