@@ -89,17 +89,16 @@ class VyvaManager implements VyvaManagerInterface {
 
     switch ($data['status']) {
       case 'progress':
-        // TODO: save progress details.
-        break;
-
       case 'failure':
-        // TODO: save failure details.
+        $entity->details = $data['details'];
+        $entity->save();
         break;
 
       case 'completed':
         // Create Virtual Y Video node.
         $video_node = $this->createVideo($data);
         $entity->gc_video = $video_node->id();
+        $entity->details = '';
         $entity->save();
 
         // Send email notification.
@@ -127,17 +126,17 @@ class VyvaManager implements VyvaManagerInterface {
    * {@inheritdoc}
    */
   public function getEntity($eventinstance_id) {
-    $entities = $this->entityTypeManager->getStorage('vyva_conversion_status')->loadByProperties(
-      ['eventinstance' => $eventinstance_id]
-    );
+    $entities = $this->entityTypeManager
+      ->getStorage('vyva_conversion_status')
+      ->loadByProperties(['eventinstance' => $eventinstance_id]);
 
     if (!empty($entities)) {
       return reset($entities);
     }
 
-    $entity = $this->entityTypeManager->getStorage('vyva_conversion_status')->create(
-      ['eventinstance' => $eventinstance_id]
-    );
+    $entity = $this->entityTypeManager
+      ->getStorage('vyva_conversion_status')
+      ->create(['eventinstance' => $eventinstance_id]);
     $entity->save();
 
     return $entity;
@@ -154,7 +153,6 @@ class VyvaManager implements VyvaManagerInterface {
     $details = $data['details'];
 
     // Create media entity.
-    // TODO: Put media into special directory?
     $media = $this->entityTypeManager->getStorage('media')->create([
       'bundle' => 'video',
       'uid' => 1,

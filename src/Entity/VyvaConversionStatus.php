@@ -66,6 +66,10 @@ class VyvaConversionStatus extends ContentEntityBase {
         'auto_create' => FALSE,
       ]);
 
+    $fields['details'] = BaseFieldDefinition::create('string_long')
+      ->setLabel(new TranslatableMarkup('Details'))
+      ->setDescription(new TranslatableMarkup('Status details.'));
+
     return $fields;
   }
 
