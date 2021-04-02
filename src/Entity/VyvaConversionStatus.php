@@ -51,7 +51,7 @@ class VyvaConversionStatus extends ContentEntityBase {
           'requested' => 'Requested',
           'started' => 'Started',
           'progress' => 'Progress',
-          'competed' => 'Completed',
+          'completed' => 'Completed',
           'failure' => 'Failure',
         ],
       ]);
