@@ -251,12 +251,6 @@ class VyvaConvertForm extends FormBase {
       '#default_value' => $series->field_ls_level->entity,
     ];
 
-    $form['image'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('Image'),
-      '#default_value' => 'TODO',
-    ];
-
     $form['actions'] = [
       '#type' => 'actions',
     ];
