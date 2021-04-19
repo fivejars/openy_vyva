@@ -368,6 +368,9 @@ class VyvaConvertForm extends FormBase {
     // item with created date less than this eventinstance date.
     $date = new DrupalDateTime($this->entity->date->value, 'UTC');
     foreach ($items['data'] as $item) {
+      if (empty($item['app']['name']) || $item['app']['name'] != 'Vimeo Live') {
+        continue;
+      }
       $item_date = new DrupalDateTime($item['created_time'], 'UTC');
       if ($item_date > $date) {
         continue;
