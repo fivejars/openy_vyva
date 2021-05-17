@@ -188,6 +188,13 @@ class VyvaConvertForm extends FormBase {
       '#default_value' => '00:00:00',
       '#placeholder' => '00:00:00',
       '#required' => TRUE,
+      '#size' => 8,
+      '#maxlength' => 8,
+      '#attributes' => [
+        'pattern' => '[0-9]{2}:[0-9]{2}:[0-9]{2}',
+      ],
+      '#max' => $video_data['duration'],
+      '#element_validate' => [[$this, 'validateTime']],
     ];
     $form['end_time'] = [
       '#type' => 'textfield',
@@ -196,6 +203,13 @@ class VyvaConvertForm extends FormBase {
       '#default_value' => $this->dateFormatter->format($video_data['duration'], 'custom', 'H:i:s', 'UTC'),
       '#placeholder' => '00:00:00',
       '#required' => TRUE,
+      '#size' => 8,
+      '#maxlength' => 8,
+      '#attributes' => [
+        'pattern' => '[0-9]{2}:[0-9]{2}:[0-9]{2}',
+      ],
+      '#max' => $video_data['duration'],
+      '#element_validate' => [[$this, 'validateTime']],
     ];
 
     $series = $this->entity->getEventSeries();
@@ -264,9 +278,49 @@ class VyvaConvertForm extends FormBase {
   }
 
   /**
+   * Validates time.
+   *
+   * @param array $element
+   *   The form element to process.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The form state.
+   * @param array $complete_form
+   *   The complete form structure.
+   */
+  public static function validateTime(array &$element, FormStateInterface $form_state, array &$complete_form) {
+    $value = trim($element['#value']);
+    $parsed = date_parse($value);
+    if ($parsed['errors']) {
+      $form_state
+        ->setError($element, t('The time "%time" is not valid.', [
+          '%time' => $value,
+        ]));
+    }
+    $seconds = $parsed['hour'] * 3600 + $parsed['minute'] * 60 + $parsed['second'];
+    if ($seconds > $element['#max']) {
+      $form_state
+        ->setError($element, t('The cut point must be within the original video duration.'));
+    }
+  }
+
+  /**
    * {@inheritdoc}
    */
-  public function validateForm(array &$form, FormStateInterface $form_state) {}
+  public function validateForm(array &$form, FormStateInterface $form_state) {
+    if (!$form_state->hasValue('begin_time')) {
+      return;
+    }
+    if (!$form_state->hasValue('end_time')) {
+      return;
+    }
+
+    $start = $form_state->getValue('begin_time');
+    $end = $form_state->getValue('end_time');
+
+    if ($start >= $end) {
+      $form_state->setError($form['end_time'], $this->t('The begin cut point must be before the end cut point.'));
+    }
+  }
 
   /**
    * {@inheritdoc}
