@@ -31,11 +31,15 @@ function vyva_entity_type_build(array &$entity_types) {
  */
 function vyva_entity_operation(EntityInterface $entity) {
   if ($entity->hasLinkTemplate('vyva-convert-form') && $entity->access('vyva-convert')) {
+    $url = $entity->toUrl('vyva-convert-form')
+      ->mergeOptions([
+        'query' => \Drupal::destination()->getAsArray(),
+      ]);
     return [
-      'vyva-vonvert' => [
+      'vyva-convert' => [
         'title' => t('Convert'),
         'weight' => 50,
-        'url' => $entity->toUrl('vyva-convert-form'),
+        'url' => $url,
       ],
     ];
   }
