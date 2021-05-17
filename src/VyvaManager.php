@@ -9,6 +9,7 @@ use Drupal\Core\Mail\MailManagerInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\node\NodeInterface;
 use GuzzleHttp\ClientInterface;
+use GuzzleHttp\Exception\TransferException;
 
 /**
  * Subscriber for Video conversion routes.
@@ -187,8 +188,16 @@ class VyvaManager implements VyvaManagerInterface {
    * {@inheritdoc}
    */
   public function getVimeoVideoData($vimeo_url) {
-    $response = $this->httpClient->request('GET', 'https://vimeo.com/api/oembed.json?url=' . $vimeo_url);
-    return Json::decode($response->getBody()->getContents());
+    try {
+      $response = $this->httpClient->request('GET', 'https://vimeo.com/api/oembed.json', [
+        'query' => ['url' => $vimeo_url],
+      ]);
+      return Json::decode($response->getBody()->getContents());
+    }
+    catch (TransferException $e) {
+      watchdog_exception('vyva', $e);
+    }
+    return NULL;
   }
 
 }

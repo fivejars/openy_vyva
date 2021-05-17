@@ -347,7 +347,9 @@ class VyvaConvertForm extends FormBase {
     if (!$event_url) {
       return NULL;
     }
-    $event_data = $this->vyvaManager->getVimeoVideoData($event_url);
+    if (!$event_data = $this->vyvaManager->getVimeoVideoData($event_url)) {
+      return NULL;
+    }
 
     // Send videos search request.
     $response = $this->httpClient->request('GET', 'https://api.vimeo.com/me/videos', [
