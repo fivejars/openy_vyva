@@ -164,9 +164,6 @@ class VyvaManager implements VyvaManagerInterface {
     ]);
     $media->save();
 
-    // Get video data from Vimeo.
-    $video_data = $this->getVimeoVideoData('https://vimeo.com/' . $details['videoId']);
-
     // Create Virtual Y Video entity.
     $node = $this->entityTypeManager->getStorage('node')->create([
       'type' => 'gc_video',
@@ -179,7 +176,7 @@ class VyvaManager implements VyvaManagerInterface {
       'field_gc_video_level' => $details['level'],
       'field_gc_video_media' => $media->id(),
       'field_gc_video_description' => $eventinstance->body->isEmpty() ? $series->body : $eventinstance->body,
-      'field_gc_video_duration' => $video_data['duration'],
+      'field_gc_video_duration' => $details['duration'],
     ]);
     $node->save();
 
