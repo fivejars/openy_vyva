@@ -14,6 +14,7 @@ use Drupal\Core\State\StateInterface;
 use Drupal\Core\Url;
 use Drupal\vyva\VyvaManagerInterface;
 use GuzzleHttp\ClientInterface;
+use GuzzleHttp\Exception\TransferException;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -301,17 +302,20 @@ class VyvaConvertForm extends FormBase {
       'POSTROLL_VIMEO_VIDEO_ID' => $config->get('post_roll'),
     ];
 
-    $uri = $config->get('authentication.domain');
+    try {
+      $this->httpClient->request('POST', $config->get('authentication.domain'), [
+        'form_params' => $data,
+      ]);
 
-    $this->httpClient->post($uri, [
-      'form_params' => $data,
-    ]);
-
-    // Update conversion status.
-    $this->vyvaManager->updateStatus([
-      'eventinstance_id' => $this->entity->id(),
-      'status' => 'requested',
-    ]);
+      // Update conversion status.
+      $this->vyvaManager->updateStatus([
+        'eventinstance_id' => $this->entity->id(),
+        'status' => 'requested',
+      ]);
+    }
+    catch (TransferException $e) {
+      $this->messenger()->addError($e->getMessage());
+    }
   }
 
   /**
