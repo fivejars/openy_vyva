@@ -4,9 +4,11 @@ namespace Drupal\vyva;
 
 use Drupal\Component\Serialization\Json;
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Datetime\DrupalDateTime;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Mail\MailManagerInterface;
 use Drupal\Core\Session\AccountInterface;
+use Drupal\Core\State\StateInterface;
 use Drupal\node\NodeInterface;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\TransferException;
@@ -52,6 +54,13 @@ class VyvaManager implements VyvaManagerInterface {
   protected $httpClient;
 
   /**
+   * The state store.
+   *
+   * @var \Drupal\Core\State\StateInterface
+   */
+  protected $state;
+
+  /**
    * Constructs a new VyvaManager object.
    *
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
@@ -64,19 +73,23 @@ class VyvaManager implements VyvaManagerInterface {
    *   Mail manager service.
    * @param \GuzzleHttp\ClientInterface $http_client
    *   An HTTP client.
+   * @param \Drupal\Core\State\StateInterface $state
+   *   The state store.
    */
   public function __construct(
     EntityTypeManagerInterface $entity_type_manager,
     ConfigFactoryInterface $config_factory,
     AccountInterface $user,
     MailManagerInterface $mail_manager,
-    ClientInterface $http_client
+    ClientInterface $http_client,
+    StateInterface $state
   ) {
     $this->entityTypeManager = $entity_type_manager;
     $this->configFactory = $config_factory;
     $this->currentUser = $user;
     $this->mailManager = $mail_manager;
     $this->httpClient = $http_client;
+    $this->state = $state;
   }
 
   /**
@@ -199,6 +212,64 @@ class VyvaManager implements VyvaManagerInterface {
       watchdog_exception('vyva', $e);
     }
     return NULL;
+  }
+
+  /**
+   * Get video data from Vimeo.
+   *
+   * @param string $event_url
+   *   The Vimeo event URL.
+   * @param string $date
+   *   The Vimeo event date.
+   *
+   * @return array|null
+   *   Video data or null.
+   *
+   * @throws \GuzzleHttp\Exception\GuzzleException
+   */
+  public function getVideo($event_url, $date) {
+    $video = NULL;
+    // Get event data from Vimeo to use its title for video search.
+    if (!$event_url) {
+      return NULL;
+    }
+    if (!$event_data = $this->getVimeoVideoData($event_url)) {
+      return NULL;
+    }
+
+    // Send videos search request.
+    $response = $this->httpClient->request('GET', 'https://api.vimeo.com/me/videos', [
+      'headers' => [
+        'Authorization' => 'Bearer ' . $this->state->get('vyva.vimeo.access_token'),
+      ],
+      'query' => [
+        'query' => $event_data['title'],
+        'per_page' => 100,
+        'sort' => 'date',
+        'direction' => 'desc',
+      ],
+    ]);
+    $items = Json::decode($response->getBody()->getContents());
+
+    // It looks like Vimeo creates new video for the next event occurrence once
+    // the previous occurrence ended. That is why we need to find the first
+    // item with created date less than this eventinstance date.
+    $date = new DrupalDateTime($date, 'UTC');
+    foreach ($items['data'] as $item) {
+      if (empty($item['app']['name']) || $item['app']['name'] != 'Vimeo Live') {
+        continue;
+      }
+      $item_date = new DrupalDateTime($item['created_time'], 'UTC');
+      if ($item_date > $date) {
+        continue;
+      }
+      else {
+        $video = $item;
+        break;
+      }
+    }
+
+    return $video;
   }
 
 }

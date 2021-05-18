@@ -10,7 +10,6 @@ use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Messenger\Messenger;
 use Drupal\Core\Routing\RouteMatchInterface;
-use Drupal\Core\State\StateInterface;
 use Drupal\Core\Url;
 use Drupal\vyva\VyvaManagerInterface;
 use GuzzleHttp\ClientInterface;
@@ -58,13 +57,6 @@ class VyvaConvertForm extends FormBase {
   protected $dateFormatter;
 
   /**
-   * The state store.
-   *
-   * @var \Drupal\Core\State\StateInterface
-   */
-  protected $state;
-
-  /**
    * The Virtual Y Video Automation manager.
    *
    * @var \Drupal\Vyva\VyvaManager
@@ -84,8 +76,6 @@ class VyvaConvertForm extends FormBase {
    *   An HTTP client.
    * @param \Drupal\Core\Datetime\DateFormatterInterface $date_formatter
    *   The date formatter service.
-   * @param \Drupal\Core\State\StateInterface $state
-   *   The state store.
    * @param \Drupal\Vyva\VyvaManagerInterface $vyva_manager
    *   The Virtual Y Video Automation manager.
    *
@@ -97,14 +87,12 @@ class VyvaConvertForm extends FormBase {
     Messenger $messenger,
     ClientInterface $http_client,
     DateFormatterInterface $date_formatter,
-    StateInterface $state,
     VyvaManagerInterface $vyva_manager
   ) {
     $this->entityTypeManager = $entity_type_manager;
     $this->messenger = $messenger;
     $this->httpClient = $http_client;
     $this->dateFormatter = $date_formatter;
-    $this->state = $state;
     $this->vyvaManager = $vyva_manager;
 
     $parameter_name = $route_match->getRouteObject()->getOption('_vyva_entity_type_id');
@@ -121,7 +109,6 @@ class VyvaConvertForm extends FormBase {
       $container->get('messenger'),
       $container->get('http_client'),
       $container->get('date.formatter'),
-      $container->get('state'),
       $container->get('vyva.manager')
     );
   }
@@ -144,7 +131,12 @@ class VyvaConvertForm extends FormBase {
     // Check if form was submitted by AJAX with Vimeo Video ID.
     $vimeo_video_id = $form_state->getValue('vimeo_video_id');
     if (!$vimeo_video_id) {
-      $video = $this->getVideo();
+      // Get event data from Vimeo to use its title for video search.
+      if (!$event_url = $this->entity->field_media_video_embed_field->value) {
+        $media = $this->entity->getEventSeries()->field_ls_media->entity;
+        $event_url = $media->field_media_video_embed_field->value;
+      }
+      $video = $this->vyvaManager->getVideo($event_url, $this->entity->date->value);
       $vimeo_video_id = $video ? str_replace('/videos/', '', $video['uri']) : '';
     }
 
@@ -227,7 +219,7 @@ class VyvaConvertForm extends FormBase {
     $form['video_name'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Video name'),
-      '#default_value' =>  $this->entity->label() ?: $series->title->value,
+      '#default_value' => $this->entity->label() ?: $series->title->value,
       '#required' => TRUE,
     ];
 
@@ -399,62 +391,6 @@ class VyvaConvertForm extends FormBase {
       $array = [$array];
     }
     return Json::encode(array_column($array, 'target_id'));
-  }
-
-  /**
-   * Get video data from Vimeo.
-   *
-   * @return array|null
-   *   Video data or null.
-   *
-   * @throws \GuzzleHttp\Exception\GuzzleException
-   */
-  public function getVideo() {
-    $video = NULL;
-    $series = $this->entity->getEventSeries();
-    // Get event data from Vimeo to use its title for video search.
-    $media = $series->field_ls_media->entity;
-    $event_url = $media->field_media_video_embed_field->value;
-    if (!$event_url) {
-      return NULL;
-    }
-    if (!$event_data = $this->vyvaManager->getVimeoVideoData($event_url)) {
-      return NULL;
-    }
-
-    // Send videos search request.
-    $response = $this->httpClient->request('GET', 'https://api.vimeo.com/me/videos', [
-      'headers' => [
-        'Authorization' => 'Bearer ' . $this->state->get('vyva.vimeo.access_token'),
-      ],
-      'query' => [
-        'query' => $event_data['title'],
-        'per_page' => 100,
-        'sort' => 'date',
-        'direction' => 'desc',
-      ],
-    ]);
-    $items = Json::decode($response->getBody()->getContents());
-
-    // It looks like Vimeo creates new video for the next event occurrence once
-    // the previous occurrence ended. That is why we need to find the first
-    // item with created date less than this eventinstance date.
-    $date = new DrupalDateTime($this->entity->date->value, 'UTC');
-    foreach ($items['data'] as $item) {
-      if (empty($item['app']['name']) || $item['app']['name'] != 'Vimeo Live') {
-        continue;
-      }
-      $item_date = new DrupalDateTime($item['created_time'], 'UTC');
-      if ($item_date > $date) {
-        continue;
-      }
-      else {
-        $video = $item;
-        break;
-      }
-    }
-
-    return $video;
   }
 
   /**
