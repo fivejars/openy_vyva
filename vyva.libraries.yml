@@ -1,0 +1,4 @@
+convert-form:
+  version: 0.1
+  js:
+    js/convert-form.js: {}

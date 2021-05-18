@@ -153,6 +153,7 @@ class VyvaConvertForm extends FormBase {
       $video_data = $this->vyvaManager->getVimeoVideoData('https://vimeo.com/' . $vimeo_video_id);
     }
 
+    $form['#attached']['library'] = ['vyva/convert-form'];
     $form['#prefix'] = '<div id="ajax-wrapper">';
     $form['#suffix'] = '</div>';
     $form['vimeo_video_id'] = [
