@@ -227,7 +227,7 @@ class VyvaConvertForm extends FormBase {
     $form['video_name'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Video name'),
-      '#default_value' => $series->title->value,
+      '#default_value' =>  $this->entity->label() ?: $series->title->value,
       '#required' => TRUE,
     ];
 
@@ -235,7 +235,7 @@ class VyvaConvertForm extends FormBase {
       '#type' => 'textfield',
       '#title' => $this->t("Host's name"),
       '#description' => $this->t('Instructor name.'),
-      '#default_value' => $series->field_ls_host_name->value,
+      '#default_value' => $this->entity->field_ls_host_name->getValue() ? $this->entity->field_ls_host_name->value : $series->field_ls_host_name->value,
       '#required' => TRUE,
     ];
 
@@ -249,7 +249,7 @@ class VyvaConvertForm extends FormBase {
       ],
       '#size' => 100,
       '#maxlength' => 512,
-      '#default_value' => $series->field_ls_category->referencedEntities(),
+      '#default_value' => $this->entity->field_ls_category->getValue() ? $this->entity->field_ls_category->referencedEntities() : $series->field_ls_category->referencedEntities(),
     ];
 
     $form['equipment'] = [
@@ -262,7 +262,7 @@ class VyvaConvertForm extends FormBase {
       ],
       '#size' => 100,
       '#maxlength' => 512,
-      '#default_value' => $series->field_ls_equipment->referencedEntities(),
+      '#default_value' => $this->entity->field_ls_equipment->getValue() ? $this->entity->field_ls_equipment->referencedEntities() : $series->field_ls_equipment->referencedEntities(),
     ];
 
     $form['level'] = [
@@ -274,7 +274,7 @@ class VyvaConvertForm extends FormBase {
       ],
       '#size' => 100,
       '#maxlength' => 512,
-      '#default_value' => $series->field_ls_level->entity,
+      '#default_value' => $this->entity->field_ls_level->getValue() ? $this->entity->field_ls_level->entity : $series->field_ls_level->entity,
     ];
 
     $form['actions'] = [
