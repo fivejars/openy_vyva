@@ -171,6 +171,7 @@ class VyvaManager implements VyvaManagerInterface {
       'uid' => 1,
       'title' => $details['videoName'],
       'status' => NodeInterface::NOT_PUBLISHED,
+      'created' => $details['videoDate'],
       'field_gc_video_instructor' => $details['hostName'],
       'field_gc_video_category' => $details['categories'],
       'field_gc_video_equipment' => $details['equipment'],
