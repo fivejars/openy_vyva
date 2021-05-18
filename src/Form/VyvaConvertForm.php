@@ -461,7 +461,9 @@ class VyvaConvertForm extends FormBase {
   public function ajaxCallback(array &$form, FormStateInterface $form_state) {
     // Update end time value to the default one - the default one is set to the
     // duration of the video.
-    $form['end_time']['#value'] = $form['end_time']['#default_value'];
+    if (isset($form['end_time'])) {
+      $form['end_time']['#value'] = $form['end_time']['#default_value'];
+    }
     return $form;
   }
 
