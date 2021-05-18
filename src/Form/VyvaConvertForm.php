@@ -174,6 +174,16 @@ class VyvaConvertForm extends FormBase {
     ];
 
     if (!$video_data) {
+      if (!$vimeo_video_id) {
+        $template = '<p>{% trans %}We couldn\'t find a video for this live stream. Please enter the video ID in the field above.{% endtrans %}</p>';
+      }
+      else {
+        $template = '<p>{% trans %}We found the video but couldn\'t get its details. It\'s either the video is still being processed or Vimeo API is down.{% endtrans %}</p>';
+      }
+      $form['message'] = [
+        '#type' => 'inline_template',
+        '#template' => $template,
+      ];
       return $form;
     }
 
