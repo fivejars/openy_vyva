@@ -351,10 +351,12 @@ class VyvaConvertForm extends FormBase {
 
     $categories = $form_state->getValue('categories');
     $equipment = $form_state->getValue('equipment');
+    $date = new DrupalDateTime($this->entity->date->value, 'UTC');
 
     $data = [
       'CALLBACK_URL' => $callback,
       'EVENT_INSTANCE_ID' => $this->entity->id(),
+      'EVENT_DATE' => $date->getTimestamp(),
       'VIMEO_VIDEO_ID' => $form_state->getValue('vimeo_video_id'),
       'START' => $start,
       'DURATION' => $duration,
