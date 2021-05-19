@@ -52,7 +52,10 @@ function vyva_entity_operation(EntityInterface $entity) {
  */
 function vyva_entity_access(EntityInterface $entity, $operation, AccountInterface $account) {
   if ($operation === 'vyva-convert') {
-    return AccessResult::allowedIfHasPermission($account, 'administer video conversion');
+    if ($account->hasPermission('administer video conversion')) {
+      return AccessResult::allowed();
+    }
+    return AccessResult::forbidden('Must have the "administer video conversion" permission to convert videos.');
   }
   return AccessResult::neutral();
 }
