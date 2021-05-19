@@ -5,6 +5,7 @@
  * Contains install and update routines.
  */
 
+use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\user\Entity\Role;
 use Drupal\user\RoleInterface;
 
@@ -26,4 +27,16 @@ function vyva_install() {
     }
     $role->save();
   }
+}
+
+/**
+ * Installs the 'changed' base field.
+ */
+function vyva_update_8001() {
+  $field_storage_definition = BaseFieldDefinition::create('changed')
+    ->setLabel(t('Changed'))
+    ->setDescription(t('The time that the status changed.'));
+
+  \Drupal::entityDefinitionUpdateManager()
+    ->installFieldStorageDefinition('changed', 'vyva_conversion_status', 'vyva', $field_storage_definition);
 }
