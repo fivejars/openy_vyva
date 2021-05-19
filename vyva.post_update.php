@@ -10,7 +10,7 @@
  */
 function vyva_post_update_init_changed() {
   $storage = \Drupal::entityTypeManager()->getStorage('vyva_conversion_status');
-  $statuses = $storage->loadMultiple([]);
+  $statuses = $storage->loadByProperties([]);
   foreach ($statuses as $status) {
     if (!$node = $status->gc_video->entity) {
       continue;
