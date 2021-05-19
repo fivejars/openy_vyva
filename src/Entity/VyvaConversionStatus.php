@@ -36,6 +36,10 @@ class VyvaConversionStatus extends ContentEntityBase {
   public static function baseFieldDefinitions(EntityTypeInterface $entity_type) {
     $fields = parent::baseFieldDefinitions($entity_type);
 
+    $fields['changed'] = BaseFieldDefinition::create('changed')
+      ->setLabel(t('Changed'))
+      ->setDescription(t('The time that the status changed.'));
+
     $fields['eventinstance'] = BaseFieldDefinition::create('entity_reference')
       ->setLabel(new TranslatableMarkup('Event Instance'))
       ->setDescription(new TranslatableMarkup('Event Instance to convert.'))
