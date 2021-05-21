@@ -6,4 +6,7 @@ services:
       - { name: event_subscriber }
   vyva.manager:
     class: Drupal\vyva\VyvaManager
-    arguments: ['@entity_type.manager', '@config.factory', '@current_user', '@plugin.manager.mail', '@http_client', '@state']
+    arguments: ['@entity_type.manager', '@config.factory', '@current_user', '@plugin.manager.mail', '@http_client', '@state', '@vyva.media_manager']
+  vyva.media_manager:
+    class: Drupal\vyva\VyvaMediaManager
+    arguments: ['@entity_type.manager', '@config.factory', '@http_client', '@token', '@file_system']

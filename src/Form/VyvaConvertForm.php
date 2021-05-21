@@ -132,7 +132,7 @@ class VyvaConvertForm extends FormBase {
     $vimeo_video_id = $form_state->getValue('vimeo_video_id');
     if (!$vimeo_video_id) {
       // Get event data from Vimeo to use its title for video search.
-      if (!$event_url = $this->entity->field_media_video_embed_field->value) {
+      if (!$this->entity->field_ls_media->entity || !$event_url = $this->entity->field_ls_media->entity->field_media_video_embed_field->value) {
         $media = $this->entity->getEventSeries()->field_ls_media->entity;
         $event_url = $media->field_media_video_embed_field->value;
       }
@@ -215,6 +215,46 @@ class VyvaConvertForm extends FormBase {
       '#element_validate' => [[$this, 'validateTime']],
     ];
 
+    $form['thumbnail_type'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Video Thumbnail'),
+      '#default_value' => 'generate',
+      '#required' => TRUE,
+      '#options' => [
+        'vimeo' => $this->t('Vimeo Event Thumbnail'),
+        'generate' => $this->t('Auto-generated Thumbnail'),
+        'upload' => $this->t('Manual Upload'),
+      ],
+      '#attributes' => [
+        'name' => 'thumbnail_type',
+      ],
+    ];
+
+    $form['vimeo_thumbnail'] = [
+      '#type' => 'details',
+      '#title' => 'Thumbnail Preview',
+      '#states' => [
+        'visible' => [
+          ':input[name="thumbnail_type"]' => ['value' => 'vimeo'],
+        ],
+      ],
+      '#tree' => TRUE,
+    ];
+    $picture = $video['pictures']['sizes'];
+    $picture = array_pop($picture)['link'];
+    $form['vimeo_thumbnail']['preview'] = [
+      '#type' => 'html_tag',
+      '#tag' => 'img',
+      '#attributes' => [
+        'src' => $picture,
+        'style' => 'max-width: 640px;',
+      ],
+    ];
+    $form['vimeo_thumbnail']['url'] = [
+      '#type' => 'value',
+      '#value' => $picture,
+    ];
+
     $series = $this->entity->getEventSeries();
     $form['video_name'] = [
       '#type' => 'textfield',
@@ -272,10 +312,37 @@ class VyvaConvertForm extends FormBase {
     $form['actions'] = [
       '#type' => 'actions',
     ];
-    $form['actions']['convert'] = [
-      '#type' => 'submit',
-      '#value' => $this->t('Convert'),
-    ];
+
+    $video_file = array_filter($video['files'], function ($e) {
+      return $e['public_name'] == 'HD 1080p';
+    });
+    if ($video_file) {
+      $form['actions']['convert'] = [
+        '#type' => 'submit',
+        '#value' => $this->t('Convert'),
+      ];
+    }
+    else {
+      $template = '<p>{% trans %}The Live Stream recording video is still being uploaded and processed. Let it finish and then reload the form. {% endtrans %}</p>';
+      $form['actions']['message'] = [
+        '#type' => 'inline_template',
+        '#template' => $template,
+      ];
+      $form['actions']['reload'] = [
+        '#type' => 'submit',
+        '#limit_validation_errors' => [],
+        '#value' => $this->t('Reload'),
+        '#ajax' => [
+          'callback' => '::formReload',
+          'event' => 'click',
+          'wrapper' => 'ajax-wrapper',
+          'progress' => [
+            'type' => 'throbber',
+            'message' => $this->t('Reloading...'),
+          ],
+        ],
+      ];
+    }
 
     return $form;
   }
@@ -344,6 +411,7 @@ class VyvaConvertForm extends FormBase {
     $categories = $form_state->getValue('categories');
     $equipment = $form_state->getValue('equipment');
     $date = new DrupalDateTime($this->entity->date->value, 'UTC');
+    $thumbnail_option = $form_state->getValue('thumbnail_type');
 
     $data = [
       'CALLBACK_URL' => $callback,
@@ -359,7 +427,16 @@ class VyvaConvertForm extends FormBase {
       'VY_LEVEL' => $form_state->getValue('level'),
       'PREROLL_VIMEO_VIDEO_ID' => $config->get('pre_roll'),
       'POSTROLL_VIMEO_VIDEO_ID' => $config->get('post_roll'),
+      'THUMBNAIL_TYPE' => $thumbnail_option,
+      'THUMBNAIL_URL' => '',
     ];
+
+    switch ($thumbnail_option) {
+      case 'vimeo':
+        $thumbnail = $form_state->getValue('vimeo_thumbnail');
+        $data['THUMBNAIL_URL'] = $thumbnail['url'];
+        break;
+    }
 
     try {
       $this->httpClient->request('POST', $config->get('authentication.domain'), [
@@ -402,6 +479,13 @@ class VyvaConvertForm extends FormBase {
     if (isset($form['end_time'])) {
       $form['end_time']['#value'] = $form['end_time']['#default_value'];
     }
+    return $form;
+  }
+
+  /**
+   * AJAX callback for changed video ID.
+   */
+  public function formReload(array &$form, FormStateInterface $form_state) {
     return $form;
   }
 

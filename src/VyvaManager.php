@@ -61,6 +61,13 @@ class VyvaManager implements VyvaManagerInterface {
   protected $state;
 
   /**
+   * The VYVA media manager.
+   *
+   * @var \Drupal\vyva\VyvaMediaManager
+   */
+  protected $mediaManager;
+
+  /**
    * Constructs a new VyvaManager object.
    *
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
@@ -75,6 +82,8 @@ class VyvaManager implements VyvaManagerInterface {
    *   An HTTP client.
    * @param \Drupal\Core\State\StateInterface $state
    *   The state store.
+   * @param \Drupal\vyva\VyvaMediaManager $vyva_media_manager
+   *   The VYVA media manager.
    */
   public function __construct(
     EntityTypeManagerInterface $entity_type_manager,
@@ -82,7 +91,8 @@ class VyvaManager implements VyvaManagerInterface {
     AccountInterface $user,
     MailManagerInterface $mail_manager,
     ClientInterface $http_client,
-    StateInterface $state
+    StateInterface $state,
+    VyvaMediaManager $vyva_media_manager
   ) {
     $this->entityTypeManager = $entity_type_manager;
     $this->configFactory = $config_factory;
@@ -90,6 +100,7 @@ class VyvaManager implements VyvaManagerInterface {
     $this->mailManager = $mail_manager;
     $this->httpClient = $http_client;
     $this->state = $state;
+    $this->mediaManager = $vyva_media_manager;
   }
 
   /**
@@ -178,6 +189,8 @@ class VyvaManager implements VyvaManagerInterface {
     ]);
     $media->save();
 
+    $teaser = $this->mediaManager->prepareThumbnailMedia($details);
+
     // Create Virtual Y Video entity.
     $node = $this->entityTypeManager->getStorage('node')->create([
       'type' => 'gc_video',
@@ -189,6 +202,7 @@ class VyvaManager implements VyvaManagerInterface {
       'field_gc_video_category' => $details['categories'],
       'field_gc_video_equipment' => $details['equipment'],
       'field_gc_video_level' => $details['level'],
+      'field_gc_video_image' => $teaser ? $teaser->id() : [],
       'field_gc_video_media' => $media->id(),
       'field_gc_video_description' => $eventinstance->body->isEmpty() ? $series->body : $eventinstance->body,
       'field_gc_video_duration' => $details['duration'],
