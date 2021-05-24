@@ -101,7 +101,7 @@ class VyvaMediaManager {
     try {
       $response = $this->httpClient->request('GET', $details['thumbnailUrl'], [
         'headers' => [
-          'accept' => 'image/jpeg;q=0.9,image/png;0.1',
+          'accept' => 'image/jpeg;q=0.9,image/png;q=0.1',
         ],
       ]);
     }

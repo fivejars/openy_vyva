@@ -10,6 +10,7 @@ use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Messenger\Messenger;
 use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\Core\Routing\UrlGeneratorInterface;
 use Drupal\Core\Url;
 use Drupal\vyva\VyvaManagerInterface;
 use GuzzleHttp\ClientInterface;
@@ -76,10 +77,10 @@ class VyvaConvertForm extends FormBase {
    *   An HTTP client.
    * @param \Drupal\Core\Datetime\DateFormatterInterface $date_formatter
    *   The date formatter service.
+   * @param \Drupal\Core\Routing\UrlGeneratorInterface $url_generator
+   *   The URL generator.
    * @param \Drupal\Vyva\VyvaManagerInterface $vyva_manager
    *   The Virtual Y Video Automation manager.
-   *
-   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    */
   public function __construct(
     EntityTypeManagerInterface $entity_type_manager,
@@ -87,12 +88,14 @@ class VyvaConvertForm extends FormBase {
     Messenger $messenger,
     ClientInterface $http_client,
     DateFormatterInterface $date_formatter,
+    UrlGeneratorInterface $url_generator,
     VyvaManagerInterface $vyva_manager
   ) {
     $this->entityTypeManager = $entity_type_manager;
     $this->messenger = $messenger;
     $this->httpClient = $http_client;
     $this->dateFormatter = $date_formatter;
+    $this->urlGenerator = $url_generator;
     $this->vyvaManager = $vyva_manager;
 
     $parameter_name = $route_match->getRouteObject()->getOption('_vyva_entity_type_id');
@@ -109,6 +112,7 @@ class VyvaConvertForm extends FormBase {
       $container->get('messenger'),
       $container->get('http_client'),
       $container->get('date.formatter'),
+      $container->get('url_generator'),
       $container->get('vyva.manager')
     );
   }
@@ -127,6 +131,7 @@ class VyvaConvertForm extends FormBase {
     if (!$this->entity) {
       return $form;
     }
+    $series = $this->entity->getEventSeries();
 
     // Check if form was submitted by AJAX with Vimeo Video ID.
     $vimeo_video_id = $form_state->getValue('vimeo_video_id');
@@ -255,7 +260,53 @@ class VyvaConvertForm extends FormBase {
       '#value' => $picture,
     ];
 
-    $series = $this->entity->getEventSeries();
+    $form['ag_thumbnail'] = [
+      '#type' => 'details',
+      '#title' => 'Thumbnail Preview',
+      '#states' => [
+        'visible' => [
+          ':input[name="thumbnail_type"]' => ['value' => 'generate'],
+        ],
+      ],
+      '#tree' => TRUE,
+    ];
+    $date = new DrupalDateTime($this->entity->date->value, 'UTC');
+    $url = $this->urlGenerator->generateFromRoute('vyva.thumbnail', [], [
+      'query' => [
+        'n' => $this->entity->label(),
+        'd' => $this->dateFormatter->format($date->getTimestamp(), 'custom', 'F j, Y'),
+        'l' => !$this->entity->field_ls_level->isEmpty() ? $this->entity->field_ls_level->entity->label() : $series->field_ls_level->entity->label(),
+      ],
+      'absolute' => TRUE,
+    ]);
+    $form['ag_thumbnail']['preview'] = [
+      '#type' => 'html_tag',
+      '#tag' => 'iframe',
+      '#attributes' => [
+        'src' => $url,
+        'style' => 'border: 0; width: 640px; height: 360px;',
+      ],
+    ];
+    $settings = $this->config('vyva.settings');
+    if ($settings->get('thumbnails.screenshot.credentials.pass')) {
+      $user = $settings->get('thumbnails.screenshot.credentials.user');
+      $pass = $settings->get('thumbnails.screenshot.credentials.pass');
+      $url = str_replace('://', '://' . $user . ':' . $pass . '@', $url);
+    }
+    $screenshot_url = Url::fromUri($settings->get('thumbnails.screenshot.url'), [
+      'query' => [
+        'type' => 'screenshot',
+        'width' => 1920,
+        'height' => 1080,
+        'waitUntil' => 'load',
+        'url' => $url,
+      ],
+    ])->toString();
+    $form['ag_thumbnail']['url'] = [
+      '#type' => 'value',
+      '#value' => $screenshot_url,
+    ];
+
     $form['video_name'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Video name'),
@@ -434,6 +485,11 @@ class VyvaConvertForm extends FormBase {
     switch ($thumbnail_option) {
       case 'vimeo':
         $thumbnail = $form_state->getValue('vimeo_thumbnail');
+        $data['THUMBNAIL_URL'] = $thumbnail['url'];
+        break;
+
+      case 'generate':
+        $thumbnail = $form_state->getValue('ag_thumbnail');
         $data['THUMBNAIL_URL'] = $thumbnail['url'];
         break;
     }

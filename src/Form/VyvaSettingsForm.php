@@ -132,6 +132,81 @@ class VyvaSettingsForm extends ConfigFormBase {
       '#description' => $this->t('We do not show the saved value here for security reasons.'),
     ];
 
+    $form['thumbnails'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Auto-generated thumbnail settings'),
+      '#tree' => TRUE,
+    ];
+
+    $form['thumbnails']['styles'] = [
+      '#type' => 'fieldset',
+      '#title' => 'Additional CSS',
+    ];
+    $form['thumbnails']['styles']['override'] = [
+      '#type' => 'textarea',
+      '#title' => $this->t('CSS override'),
+      '#description' => $this->t('Override default CSS rules for Virtual Y auto-generated thumbnails.'),
+      '#default_value' => $config->get('thumbnails.styles.override'),
+    ];
+
+    $form['thumbnails']['cachet'] = [
+      '#type' => 'fieldset',
+      '#title' => 'Cachet',
+      '#description' => $this->t('Provide the source of the Web Open Font Format files for the Cachet font variations.'),
+    ];
+    $form['thumbnails']['cachet']['extralight'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Path to Cachet ExtraLight WOFF-file'),
+      '#description' => $this->t('The path to file without the leading slash, %path%', [
+        '%path%' => 'themes/contrib/openy_lily/fonts/cachet/cachet-extralight.woff',
+      ]),
+      '#default_value' => $config->get('thumbnails.cachet.extralight'),
+    ];
+    $form['thumbnails']['cachet']['book'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Path to Cachet (Book) WOFF-file'),
+      '#description' => $this->t('E.g., %path%', [
+        '%path%' => 'themes/contrib/openy_lily/fonts/cachet/cachet-book.woff',
+      ]),
+      '#default_value' => $config->get('thumbnails.cachet.book'),
+    ];
+    $form['thumbnails']['cachet']['bold'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Path to Cachet Bold WOFF-file'),
+      '#description' => $this->t('E.g., %path%', [
+        '%path%' => 'themes/contrib/openy_lily/fonts/cachet/cachet-bold.woff',
+      ]),
+      '#default_value' => $config->get('thumbnails.cachet.bold'),
+    ];
+
+    $form['thumbnails']['screenshot'] = [
+      '#type' => 'fieldset',
+      '#title' => 'Screenshots',
+    ];
+    $form['thumbnails']['screenshot']['url'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Screenshot Service URL'),
+      '#description' => $this->t('The URL to generate website page screenshots, e.g. %path%', [
+        '%path%' => 'https://example.com/screenshot?url=',
+      ]),
+      '#default_value' => $config->get('thumbnails.screenshot.url'),
+    ];
+    $form['thumbnails']['screenshot']['credentials'] = [
+      '#type' => 'fieldset',
+      '#title' => $this->t('Credentials'),
+      '#description' => $this->t('If you site is under the Basic authentication, specify the credentials.'),
+    ];
+    $form['thumbnails']['screenshot']['credentials']['user'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('User name'),
+      '#default_value' => $config->get('thumbnails.screenshot.credentials.user'),
+    ];
+    $form['thumbnails']['screenshot']['credentials']['pass'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Screenshot Service URL'),
+      '#default_value' => $config->get('thumbnails.screenshot.credentials.pass'),
+    ];
+
     return parent::buildForm($form, $form_state);
   }
 
@@ -145,6 +220,7 @@ class VyvaSettingsForm extends ConfigFormBase {
       ->set('notification', $form_state->getValue('notification'))
       ->set('authentication', $form_state->getValue('authentication'))
       ->set('webhook', $form_state->getValue('webhook'))
+      ->set('thumbnails', $form_state->getValue('thumbnails'))
       ->save();
 
     $this->state->set('vyva.vimeo.client_id', $form_state->getValue('client_id'));
