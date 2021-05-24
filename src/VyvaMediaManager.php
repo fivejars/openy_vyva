@@ -44,14 +44,14 @@ class VyvaMediaManager {
   protected $token;
 
   /**
-   * The token.
+   * The file system helper.
    *
    * @var \Drupal\Core\File\FileSystemInterface
    */
   protected $fileSystem;
 
   /**
-   * Constructs a new VyvaManager object.
+   * Constructs a new VyvaMediaManager object.
    *
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    *   The entity type manager.
@@ -120,7 +120,7 @@ class VyvaMediaManager {
     }
 
     // Store file locally.
-    if ($this->fileSystem->prepareDirectory($destination, FileSystemInterface::CREATE_DIRECTORY)) {
+    if (!$this->fileSystem->prepareDirectory($destination, FileSystemInterface::CREATE_DIRECTORY)) {
       return NULL;
     }
     $filename = $this->buildFilename($details);
