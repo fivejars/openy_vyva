@@ -198,12 +198,12 @@ class VyvaSettingsForm extends ConfigFormBase {
     ];
     $form['thumbnails']['screenshot']['credentials']['user'] = [
       '#type' => 'textfield',
-      '#title' => $this->t('User name'),
+      '#title' => $this->t('Username'),
       '#default_value' => $config->get('thumbnails.screenshot.credentials.user'),
     ];
     $form['thumbnails']['screenshot']['credentials']['pass'] = [
       '#type' => 'textfield',
-      '#title' => $this->t('Screenshot Service URL'),
+      '#title' => $this->t('Password'),
       '#default_value' => $config->get('thumbnails.screenshot.credentials.pass'),
     ];
 
