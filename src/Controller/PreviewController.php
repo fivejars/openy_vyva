@@ -45,7 +45,7 @@ class PreviewController extends ControllerBase {
   }
 
   /**
-   * Returns a render-able array for a test page.
+   * Builds the thumbnails preview page response.
    */
   public function content(Request $request) {
     $js_assets = [];

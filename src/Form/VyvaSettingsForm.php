@@ -194,7 +194,7 @@ class VyvaSettingsForm extends ConfigFormBase {
     $form['thumbnails']['screenshot']['credentials'] = [
       '#type' => 'fieldset',
       '#title' => $this->t('Credentials'),
-      '#description' => $this->t('If you site is under the Basic authentication, specify the credentials.'),
+      '#description' => $this->t('If your site is under the Basic authentication, specify the credentials.'),
     ];
     $form['thumbnails']['screenshot']['credentials']['user'] = [
       '#type' => 'textfield',

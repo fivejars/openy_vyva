@@ -8,9 +8,9 @@ body {
 .content-wrapper {
   width: 100vw;
   position: absolute;
-  /*padding-left: 50px;*/
+  padding-left: 50px;
   padding-left: 4.63vh;
-  /*padding-right: 350px;*/
+  padding-right: 350px;
   padding-right: 32.4vh;
   top: 50%;
   left: 0;
@@ -18,8 +18,8 @@ body {
   box-sizing: border-box;
 }
 .level {
-  /*font-size: 134px;*/
   font-family: 'Cachet ExtraLight', Verdana, Geneva, sans-serif;
+  font-size: 134px;
   font-size: 12.4vh;
   font-weight: lighter;
   text-align: left;
@@ -29,9 +29,9 @@ body {
 }
 .name {
   font-family: 'Cachet Bold', Verdana, Geneva, sans-serif;
-  /*font-size: 200px;*/
+  font-size: 200px;
   font-size: 18.5vh;
-  /*line-height: 174px;*/
+  line-height: 174px;
   line-height: 16.11vh;
   font-weight: 700;
   text-align: left;
@@ -41,17 +41,17 @@ body {
   text-transform: uppercase;
 }
 .name--small {
-  /*font-size: 140px;*/
+  font-size: 140px;
   font-size: 13vh;
-  /*line-height: 140px;*/
+  line-height: 140px;
   line-height: 13vh;
 }
 .date {
   font-family: Cachet, Verdana, Geneva, sans-serif;
-  /*font-size: 134px;*/
+  font-size: 134px;
   font-size: 12.4vh;
   text-align: left;
-  /*letter-spacing: -7.5px;*/
+  letter-spacing: -7.5px;
   letter-spacing: -0.69vh;
   color: #EDEEEF;
   opacity: 1;
