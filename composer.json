@@ -5,6 +5,7 @@
   "require": {
     "ymcatwincities/openy_gated_content": "^1.0"
   },
+  "homepage": "https://github.com/fivejars/openy_vyva",
   "license": "GPL-2.0+",
   "minimum-stability": "dev"
 }
