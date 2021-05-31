@@ -1,0 +1,10 @@
+{
+  "name": "fivejars/vyva",
+  "description": "Open Y Virtual Y Video Automation",
+  "type": "drupal-module",
+  "require": {
+    "ymcatwincities/openy_gated_content": "^1.0"
+  },
+  "license": "GPL-2.0+",
+  "minimum-stability": "dev"
+}

@@ -1,0 +1,42 @@
+<?php
+
+/**
+ * @file
+ * Contains install and update routines.
+ */
+
+use Drupal\Core\Field\BaseFieldDefinition;
+use Drupal\user\Entity\Role;
+use Drupal\user\RoleInterface;
+
+/**
+ * Implements hook_install().
+ */
+function vyva_install() {
+  // Add permissions to anonymous and authenticated roles.
+  $permissions = [
+    'restful post vyva_conversion_status',
+  ];
+  $roles = Role::loadMultiple([
+    RoleInterface::ANONYMOUS_ID,
+    RoleInterface::AUTHENTICATED_ID,
+  ]);
+  foreach ($roles as $role) {
+    foreach ($permissions as $permission) {
+      $role->grantPermission($permission);
+    }
+    $role->save();
+  }
+}
+
+/**
+ * Installs the 'changed' base field.
+ */
+function vyva_update_8001() {
+  $field_storage_definition = BaseFieldDefinition::create('changed')
+    ->setLabel(t('Changed'))
+    ->setDescription(t('The time that the status changed.'));
+
+  \Drupal::entityDefinitionUpdateManager()
+    ->installFieldStorageDefinition('changed', 'vyva_conversion_status', 'vyva', $field_storage_definition);
+}

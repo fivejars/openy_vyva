@@ -1,0 +1,95 @@
+<?php
+
+/**
+ * @file
+ * Virtual Y video automation module.
+ */
+
+use Drupal\Core\Access\AccessResult;
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Session\AccountInterface;
+
+/**
+ * Implements hook_entity_type_build().
+ */
+function vyva_entity_type_build(array &$entity_types) {
+  /** @var \Drupal\Core\Entity\EntityTypeInterface[] $entity_types */
+  $entity_types['eventinstance']->setLinkTemplate('vyva-convert-form', '/vyva_convert/eventinstance/{eventinstance}');
+}
+
+/**
+ * Declares entity operations.
+ *
+ * @param \Drupal\Core\Entity\EntityInterface $entity
+ *   The entity on which the linked operations will be performed.
+ *
+ * @return array
+ *   An operations array as returned by
+ *   EntityListBuilderInterface::getOperations().
+ *
+ * @see \Drupal\Core\Entity\EntityListBuilderInterface::getOperations()
+ */
+function vyva_entity_operation(EntityInterface $entity) {
+  if ($entity->hasLinkTemplate('vyva-convert-form') && $entity->access('vyva-convert')) {
+    $url = $entity->toUrl('vyva-convert-form')
+      ->mergeOptions([
+        'query' => \Drupal::destination()->getAsArray(),
+      ]);
+    return [
+      'vyva-convert' => [
+        'title' => t('Convert'),
+        'weight' => 50,
+        'url' => $url,
+      ],
+    ];
+  }
+
+  return [];
+}
+
+/**
+ * Implements hook_entity_access().
+ */
+function vyva_entity_access(EntityInterface $entity, $operation, AccountInterface $account) {
+  if ($operation === 'vyva-convert') {
+    if ($account->hasPermission('administer video conversion')) {
+      return AccessResult::allowed();
+    }
+    return AccessResult::forbidden('Must have the "administer video conversion" permission to convert videos.');
+  }
+  return AccessResult::neutral();
+}
+
+/**
+ * Implements hook_mail().
+ */
+function vyva_mail($key, &$message, $params) {
+  switch ($key) {
+    case 'create_gc_video':
+      $message['from'] = \Drupal::config('system.site')->get('mail');
+      $message['subject'] = t('A live stream recording has been converted to On-Demand Video - Virtual YMCA');
+      $tokens = ['@video_node_name', '@video_node_edit_url'];
+      $values = [$params['video_node_name'], $params['video_node_edit_url']];
+      $message['body'][] = str_replace($tokens, $values, $params['message']);
+      break;
+  }
+}
+
+/**
+ * Implements hook_theme().
+ */
+function vyva_theme($existing, $type, $theme, $path) {
+  return [
+    'vyva_thumbnail' => [
+      'variables' => [
+        'level' => NULL,
+        'name' => NULL,
+        'date' => NULL,
+        'javascript' => [],
+        'stylesheet' => NULL,
+        'settings' => [],
+      ],
+      'template' => 'thumbnail-preview',
+    ],
+  ];
+}

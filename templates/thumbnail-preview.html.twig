@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    @font-face {
+      font-family: 'Cachet';
+      font-display: swap;
+      src: local("Cachet"), url("{{ settings.cachet.book }}") format("woff");
+      font-weight: normal;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: 'Cachet Bold';
+      font-display: swap;
+      src: local("Cachet Bold"), url("{{ settings.cachet.bold }}") format("woff");
+      font-weight: 700;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: 'Cachet ExtraLight';
+      font-display: swap;
+      src: local("Cachet ExtraLight"), url("{{ settings.cachet.extralight }}") format("woff");
+      font-weight: 300;
+      font-style: normal;
+    }
+  </style>
+  <link rel="stylesheet" href="{{ stylesheet }}" />
+
+  <style>
+    {{ settings.styles.override }}
+  </style>
+
+  <!-- Scripts -->
+  {% for url in javascript %}
+    <script src="{{ url }}"></script>
+  {% endfor %}
+  <script>
+    jQuery(function() {
+      var name = jQuery('.name').height();
+      if (name > 500) {
+        jQuery('.name').addClass('name--small');
+      }
+    });
+  </script>
+  <!-- /Scripts -->
+</head>
+<body>
+  <div class="content-wrapper">
+    <div class="level">{{ level }}</div>
+    <div class="name">{{ name }}</div>
+    <div class="date">{{ date }}</div>
+  </div>
+</body>
+</html>

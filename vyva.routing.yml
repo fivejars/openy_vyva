@@ -1,0 +1,17 @@
+vyva.settings:
+  path: '/admin/openy/virtual-ymca/vyva'
+  defaults:
+    _form: 'Drupal\vyva\Form\VyvaSettingsForm'
+    _title: 'Video automation settings'
+  options:
+    _admin_route: TRUE
+  requirements:
+    _permission: 'administer video automation'
+
+vyva.thumbnail:
+  path: '/vyva/thumbnails-preview'
+  defaults:
+    _controller: '\Drupal\vyva\Controller\PreviewController::content'
+    _title: 'Thumbnail Preview'
+  requirements:
+    _permission: 'access content'
